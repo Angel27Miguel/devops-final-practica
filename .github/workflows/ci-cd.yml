@@ -9,44 +9,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1️⃣ Clonar el repositorio
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      # 1️⃣ Clonar el repositorio
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-    # 2️⃣ Configurar Node.js
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      # 2️⃣ Configurar Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-    # 3️⃣ Instalar dependencias
-    - name: Install dependencies
-      run: npm ci --omit=optional
+      # 3️⃣ Instalar dependencias
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
 
-    # 4️⃣ Instalar Jest globalmente (evita problemas de permisos)
-    - name: Install Jest globally
-      run: npm install -g jest
+      # 4️⃣ Ejecutar tests
+      - name: Run tests
+        run: npm test
 
-    # 5️⃣ Ejecutar pruebas unitarias
-    - name: Run tests
-      run: jest
+      # 5️⃣ Login en Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # 6️⃣ Loguearse en Docker Hub
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # 6️⃣ Construir y subir imagen Docker
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/devops-final:latest
 
-    # 7️⃣ Construir y subir la imagen Docker
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/devops-final:latest
-
-    # 8️⃣ Desplegar en Render usando Deploy Hook
-    - name: Deploy to Render
-      run: |
-        curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      # 7️⃣ Desplegar en Render
+      - name: Deploy to Render
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
